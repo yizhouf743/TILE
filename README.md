@@ -3,7 +3,7 @@ This is the project for the work: 'TILE: An  Input Structuring and Leveling Syst
 The codes are still under developments, and should not be used in any security sensitive product.
 
 # Notes:
-We are using model pruning technologies from the paper titled "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning." We are not showing the code for this part as the code from the paper is not publicly available. We will update this section once their code becomes publicly accessible.
+We are using model pruning technologies from the paper "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning." We are not showing the code for this part as the code from the paper is not publicly available. We will update this section once their code becomes publicly accessible.
 
 # Requirements:
 openssl
