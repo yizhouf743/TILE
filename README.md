@@ -1,2 +1,2 @@
 # EIS
-This is the project for the work: 'EIS: Efficient Input Simplification System for Privacy-Preserving Inference' 
+This is the project for the work: 'TILE: An  Input Structuring and Leveling System to Speed up Secure Inference' 
