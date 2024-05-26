@@ -7,11 +7,16 @@ We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Ass
 We are not showing the code related to this paper, as it is not publicly available. We will update this section once their code becomes publicly accessible.
 
 # Requirements:
-openssl \\
-c++ compiler \\
+openssl 
+
+c++ compiler 
+
 cmake >= 3.13
+
 git
+
 make
+
 OpenMP
 
 
