@@ -20,8 +20,6 @@ import numpy as np
 
 
 def dist_loss(t, s):
-    ## KD temperature: Dafult set is 1 in paper, but 4 in NNI code:
-    # try temp be 0.001, if not good, change it back to 4.
     T = 4
     prob_t = F.softmax(t/T, dim=1)
     log_prob_s = F.log_softmax(s/T, dim=1)
@@ -290,7 +288,7 @@ def cal_partial_order(replace_order, search_range, cn=[2, 2, 2, 2], threshold=2)
           indices = torch.where(layer_order < (threshold / rs))[0]
         print('inital threshold for', name, 'is', (threshold * rs).item())
       
-      # # 取整：
+      # # skip if the number of applied channel cannot fill one ciphertext：
       if indices.numel() < cpc:
         indices = torch.tensor([])
         remove_item.append(search_range[counter])
@@ -424,25 +422,24 @@ if __name__ == '__main__':
     print('teacher acc: ',  guilde_acc, '%')
     print(tile_list)
     
-    # # # output partial replace order:
-    # test = search_range
-    # # # Initial network:
-    # partial_order = cal_importance(guilde_net)
-    # threshold = 3
-    # version_id = 3
-    # net = res.ResNet50(res.Bottleneck,[3,4,6,3], replace_point=test, cn=[2, 2, 2, 2], partial=partial_order)
-    # net.load_state_dict(pre_trained_model, strict=True)     
-    # net = net.to(device)
+    # # output partial replace order:
+    test = search_range
+    # # Initial network:
+    partial_order = cal_importance(guilde_net)
+    threshold = 3
+    version_id = 3
+    net = res.ResNet50(res.Bottleneck,[3,4,6,3], replace_point=test, cn=[2, 2, 2, 2], partial=partial_order)
+    net.load_state_dict(pre_trained_model, strict=True)     
+    net = net.to(device)
     
-    # hspg_score, replace_order = search_net(net, guilde_net, 1, threshold)
-    # torch.save(replace_order, save_location + option_save_location + 'inital_mask_prun.pth')
-    # print('finish generate reorder mask for model')
+    hspg_score, replace_order = search_net(net, guilde_net, 1, threshold)
+    torch.save(replace_order, save_location + option_save_location + 'inital_mask_prun.pth')
+    print('finish generate apply mask for model')
 
     replace_order = torch.load(save_location + option_save_location + 'inital_mask_prun.pth', map_location=torch.device(device)) 
     para = pre_trained_model
  
     acc = 0
-    # # Our previous best result is about 0.875, can double check that later!!!!
     step = (1 - 0.8603) / 4
     # thres = 2.8952250000000017
     bottom = 0.7238062500000001
