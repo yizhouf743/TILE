@@ -24,7 +24,7 @@ add_network_OT(minionn)
 add_network_HE(resnet32_cifar)
 add_network_OT(resnet32_cifar)
 add_network_HE(vgg16_TILE)
-add_network_HE(vgg16_original)
+add_network_HE(vgg16_baseline)
 
 # Beacon benchmarks
 
