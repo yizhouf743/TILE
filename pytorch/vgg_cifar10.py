@@ -254,7 +254,7 @@ def cal_partial_order(replace_order, search_range, cn=[2, 2, 2], threshold=2):
       # print(name, indices.shape)
       if prunned_input_chans_pos.numel() > 0:
         indices = indices[~torch.isin(indices, prunned_input_chans_pos)]
-      # # 取整：
+          
       if indices.numel() < non_prunned_chans - cpc:
         if indices.numel() < cpc:
           if search_range[counter] not in remove_item:
