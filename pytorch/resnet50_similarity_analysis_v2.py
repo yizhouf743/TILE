@@ -7,8 +7,6 @@ import torchvision.datasets as datasets
 import torch.utils.data as data
 import torchvision.transforms as transforms
 import os, copy, sys
-# from model.vgg_imagenet import vgg16
-# import model.resnet50_tiny_v5_2 as res
 import model.resnet50_tiny_recon as res
 import torch.nn.functional as F
 from torchinfo import summary
