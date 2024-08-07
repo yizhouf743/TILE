@@ -253,7 +253,7 @@ def cal_partial_order(replace_order, search_range, cn=[2, 2, 2], threshold=2):
       # print(name, indices.shape)
       if prunned_input_chans_pos.numel() > 0:
         indices = indices[~torch.isin(indices, prunned_input_chans_pos)]
-      # # 取整：
+          
       if indices.numel() < non_prunned_chans - cpc:
         if indices.numel() < cpc:
           if search_range[counter] not in remove_item:
@@ -284,7 +284,6 @@ def fine_tunning(search_result, train_epoch, baseline_net=None, with_KD=False, w
     new_key = list(search_result.state_dict().keys())
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, search_result.parameters()), 0.005, momentum=0.9, weight_decay=5e-4)
-#    scheduler = StepLR(optimizer, step_size=50, gamma=0.1)
     scheduler = MultiStepLR(optimizer, milestones=[int(train_epoch * 0.5), int(train_epoch * 0.75)], gamma=0.1)
     best_acc = train_model_with_purn_KD(search_result, baseline_net, train_epoch, optimizer, criterion, scheduler, new_key, with_KD, with_prun)
     return best_acc
@@ -393,10 +392,6 @@ ps = [2, 2, 2, 2, 'M', 2, 2, 2, 2, 2, 2, 'M', 2, 2, 2,'M']
 search_range = [1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 14]
 tile_type = ['N', 0, 0, 0, 'N', 0, 0, 0, 0, 0, 0, 'N', 1, 1, 1,'N']
 
-
-## Search Model based on SecureTVM's case:
-arg = 'he_friend'
-## for yifei's prunned model:
 threshold = 0.027 
 save_location = './experiment_data/VGG_Cifar10/'
 sub_location = 'Prunning/'
