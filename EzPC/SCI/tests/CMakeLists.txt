@@ -32,6 +32,7 @@ add_test_HE(argmax)
 add_test_HE(conv)
 add_test_HE(fc)
 add_test_HE(elemwise_prod)
+add_test_HE(TILE)
 
 add_test_float(bench_op)
 add_test_float(primitive)
