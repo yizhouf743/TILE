@@ -4,7 +4,6 @@ The codes are still under developments, and should not be used in any security s
 
 # Content:
 EzPC: A framework that help to covert pytorch code to HE-friendly cpp code.
-
 pytorch: The implmentaion for TILE on VGG16 and Resnet50 on Cifar10 and Tiny-Imagenet, including TILE searching, fine-tuning, running inference and so on.
 
 # Notes:
