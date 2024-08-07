@@ -9,8 +9,6 @@ import torchvision.datasets as datasets
 import torch.utils.data as data
 import torchvision.transforms as transforms
 import os, copy, sys
-# from model.vgg_imagenet import vgg16
-# import model.resnet50_tiny_v5_2 as res
 import model.resnet50_tiny_recon as res
 import torch.nn.functional as F
 from torchinfo import summary
@@ -19,11 +17,8 @@ from torch.optim.lr_scheduler import MultiStepLR, StepLR
 from layer_importance_v3 import hspg_resnet50
 from torchinfo import summary
 import numpy as np
-# import matplotlib.pyplot as plt
-# import seaborn as sns
 
 def dist_loss(t, s):
-    ## KD temperature: Dafult set is 1 in paper, but 4 in NNI code:
     T = 4
     prob_t = F.softmax(t/T, dim=1)
     log_prob_s = F.log_softmax(s/T, dim=1)
@@ -351,7 +346,6 @@ def cal_partial_order(replace_order, search_range, cn=[2, 2, 2, 2], threshold=2)
       if prunned_input_chans_pos.numel() > 0:
         indices = indices[~torch.isin(indices, prunned_input_chans_pos)]
 
-      # # 取整：
       if indices.numel() < cpc:
         indices = torch.tensor([])
         remove_item.append(search_range[counter])
@@ -488,20 +482,20 @@ if __name__ == '__main__':
     print(tile_list)
     
     # # # output partial replace order:
-    # test = search_range
-    # partial_order = cal_importance(guilde_net)
-    # threshold = 1
-    # version_id = 3
-    # net = res.ResNet50(res.Bottleneck,[3, 4, 6, 3], replace_point=test, cn=[2, 2, 2, 2], partial=partial_order)
-    # net.load_state_dict(pre_trained_model, strict=True)     
-    # net = net.to(device)
+    test = search_range
+    partial_order = cal_importance(guilde_net)
+    threshold = 1
+    version_id = 3
+    net = res.ResNet50(res.Bottleneck,[3, 4, 6, 3], replace_point=test, cn=[2, 2, 2, 2], partial=partial_order)
+    net.load_state_dict(pre_trained_model, strict=True)     
+    net = net.to(device)
 
-    # hspg_score, replace_order = search_net(net, guilde_net, 1, threshold, pruned=True)
-    # torch.save(replace_order, save_location + 'inital_mask_prun.pth')
+    hspg_score, replace_order = search_net(net, guilde_net, 1, threshold, pruned=True)
+    torch.save(replace_order, save_location + 'inital_mask_prun.pth')
 
     replace_order = torch.load(save_location + 'inital_mask_prun.pth', map_location=torch.device(device)) 
     para = pre_trained_model
-    # del net
+    del net
     
     acc = 0
     thres = 1.6251
