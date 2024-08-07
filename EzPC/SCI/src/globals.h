@@ -40,6 +40,7 @@ SOFTWARE.
 // Additional Headers for Athos
 #ifdef SCI_HE
 #include "LinearHE/conv-field.h"
+#include "LinearHE/TILE-field.h"
 #include "LinearHE/elemwise-prod-field.h"
 #include "LinearHE/fc-field.h"
 #endif
@@ -68,9 +69,11 @@ extern MatMulUniform<sci::NetIO, intType, sci::IKNP<sci::NetIO>> *multUniform;
 #endif
 #ifdef SCI_HE
 extern ConvField *he_conv;
+extern TILEField *he_tile;
 extern FCField *he_fc;
 extern ElemWiseProdField *he_prod;
 #endif
+
 extern sci::IKNP<sci::NetIO> *iknpOT;
 extern sci::IKNP<sci::NetIO> *iknpOTRoleReversed;
 extern sci::KKOT<sci::NetIO> *kkot;

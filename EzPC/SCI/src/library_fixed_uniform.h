@@ -24,6 +24,10 @@ SOFTWARE.
 
 #include "defines_uniform.h"
 #include "utils/ArgMapping/ArgMapping.h"
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
 
 // Note of the bracket around each expression use -- if this is not there, not
 // macro expansion
@@ -54,6 +58,15 @@ void Conv2DWrapper(signedIntType N, signedIntType H, signedIntType W,
                    signedIntType zPadWRight, signedIntType strideH,
                    signedIntType strideW, intType *inputArr, intType *filterArr,
                    intType *outArr);
+
+void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
+                   signedIntType CI, signedIntType FH, signedIntType FW,
+                   signedIntType CO, signedIntType tile_type, float apply_ratio, signedIntType ntp, float nar,
+                   signedIntType zPadHLeft,
+                   signedIntType zPadHRight, signedIntType zPadWLeft,
+                   signedIntType zPadWRight, signedIntType strideH,
+                   signedIntType strideW, intType *inputArr, intType *filterArr,
+                   intType *outArr, const std::vector<size_t> inputIndices, const std::vector<size_t> outputIndices);
 
 void Conv2DGroupWrapper(signedIntType N, signedIntType H, signedIntType W,
                         signedIntType CI, signedIntType FH, signedIntType FW,
@@ -206,4 +219,35 @@ T *make_array(size_t s1, size_t s2, size_t s3, size_t s4, size_t s5) {
   return new T[s1 * s2 * s3 * s4 * s5];
 }
 
+template <typename T>
+void swapChannels(
+    std::vector<std::vector<std::vector<std::vector<T>>>>& arr,
+    const std::vector<size_t>& indices,
+    bool swapInput) {
+
+    if (indices.empty()) {
+        // No indices provided, do nothing
+        return;
+    }
+    
+    // // shuffle indice's order: can be done on server in the offline phase, this just a example code
+    // std::vector<size_t> shuffled_indices = indices;
+    // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    // std::default_random_engine rng(seed);
+    // std::shuffle(shuffled_indices.begin(), shuffled_indices.end(), rng);
+
+    size_t num_channels = arr[0][0][0].size();
+
+    for (size_t i = 0; i < indices.size(); ++i) {
+        if (indices[i] < num_channels && i < num_channels) {
+            for (auto& mat1 : arr) {
+                for (auto& mat2 : mat1) {
+                    for (auto& mat3 : mat2) {
+                        std::swap(mat3[i], mat3[indices[i]]);
+                    }
+                }
+            }
+        }
+    }
+}
 #endif

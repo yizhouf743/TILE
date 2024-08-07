@@ -41,6 +41,7 @@ MatMulUniform<sci::NetIO, intType, sci::IKNP<sci::NetIO>> *multUniform;
 #endif
 #ifdef SCI_HE
 ConvField *he_conv;
+TILEField *he_tile;
 FCField *he_fc;
 ElemWiseProdField *he_prod;
 #endif

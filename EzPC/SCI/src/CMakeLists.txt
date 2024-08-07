@@ -114,6 +114,7 @@ install(FILES
         "cleartext_library_fixed.h"
         "cleartext_library_fixed_uniform.h"
         "cleartext_library_float.h"
+        "plaintxt_operation.h"
         DESTINATION include)
 
 install(FILES
