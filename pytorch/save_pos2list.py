@@ -1,10 +1,11 @@
 import torch, os
 import torch.nn as nn
 
+# load the tile position list
 save_location = './experiment_data/VGG_Cifar10/'
 file_name ='Partial_Model_no_loss_-1.07_v4_mask.pth'
-
 pos_list = torch.load(save_location + file_name, map_location=torch.device('cpu'))
+
 # Specify the directory to save the text file
 directory = 'output/Position_List/vgg_cifar10'
 os.makedirs(directory, exist_ok=True)
