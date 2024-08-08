@@ -3,7 +3,7 @@ This is the project for the work: "TILE: Input Structure Optimization for Neural
 The codes are still under developments, and should not be used in any security sensitive product.
 
 # Content:
-EzPC: A framework that help to covert pytorch code to HE-friendly cpp code and test TILE module and network performance. 
+EzPC: A framework that help to covert pytorch code to HE-friendly cpp code and test TILE module/network performance. 
 
 pytorch: The implmentaion for TILE on VGG16 and Resnet50 on Cifar10 and Tiny-Imagenet, including TILE searching, fine-tuning, running inference and so on.
 
