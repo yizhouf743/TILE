@@ -3,7 +3,7 @@ This is the project for the work: "TILE: Input Structure Optimization for Neural
 The codes are still under developments, and should not be used in any security sensitive product.
 
 # Content:
-EzPC: A framework that help to covert pytorch code to HE-friendly cpp code.
+EzPC: A framework that help to covert pytorch code to HE-friendly cpp code and test TILE module/network performance. 
 
 pytorch: The implmentaion for TILE on VGG16 and Resnet50 on Cifar10 and Tiny-Imagenet, including TILE searching, fine-tuning, running inference and so on.
 
@@ -11,7 +11,7 @@ pytorch: The implmentaion for TILE on VGG16 and Resnet50 on Cifar10 and Tiny-Ima
 We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning". 
 We are not showing the code related to this paper, as it is not publicly available. We will update this section once their code becomes publicly accessible.
 
-The implementation to reproduce the results in the paper can be found here: EzPC/SCI/build.
+The implementation to reproduce the results in the paper can be found here: EzPC/SCI/.
 
 We will optimize and cleanup the code in this repo.
 
