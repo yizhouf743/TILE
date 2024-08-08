@@ -11,7 +11,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF ,
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
@@ -24,6 +24,10 @@ SOFTWARE.
 
 #include "defines_uniform.h"
 #include "utils/ArgMapping/ArgMapping.h"
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
 
 // Note of the bracket around each expression use -- if this is not there, not
 // macro expansion
@@ -55,6 +59,15 @@ void Conv2DWrapper(signedIntType N, signedIntType H, signedIntType W,
                    signedIntType strideW, intType *inputArr, intType *filterArr,
                    intType *outArr);
 
+void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
+                   signedIntType CI, signedIntType FH, signedIntType FW,
+                   signedIntType CO, signedIntType tile_type, float apply_ratio, signedIntType ntp, float nar,
+                   signedIntType zPadHLeft,
+                   signedIntType zPadHRight, signedIntType zPadWLeft,
+                   signedIntType zPadWRight, signedIntType strideH,
+                   signedIntType strideW, intType *inputArr, intType *filterArr,
+                   intType *outArr, const std::vector<size_t> inputIndices, const std::vector<size_t> outputIndices);
+
 void Conv2DGroupWrapper(signedIntType N, signedIntType H, signedIntType W,
                         signedIntType CI, signedIntType FH, signedIntType FW,
                         signedIntType CO, signedIntType zPadHLeft,
@@ -63,19 +76,30 @@ void Conv2DGroupWrapper(signedIntType N, signedIntType H, signedIntType W,
                         signedIntType strideW, signedIntType G,
                         intType *inputArr, intType *filterArr, intType *outArr);
 
+void ConvTranspose2DWrapper(int32_t N, int32_t HPrime, int32_t WPrime,
+                               int32_t CI, int32_t FH, int32_t FW,
+                               int32_t CO, int32_t H, int32_t W,
+                               int32_t zPadTrHLeft, int32_t zPadTrHRight,
+                               int32_t zPadTrWLeft, int32_t zPadTrWRight,
+                               int32_t strideH, int32_t strideW,
+                               uint64_t* inputArr, uint64_t* filterArr,
+                               uint64_t* outArr);
+
 void ElemWiseActModelVectorMult(int32_t size, intType *inArr,
                                 intType *multArrVec, intType *outputArr);
 
-#if USE_CHEETAH 
-void BatchNorm(int32_t B, int32_t H, int32_t W, int32_t C, 
-               const intType *inputAr, const intType *scales, const intType *bias, 
-               intType *outArr);
-#endif
-
 void ArgMax(int32_t s1, int32_t s2, intType *inArr, intType *outArr);
+
+void Min(int32_t size, intType *inArr, int32_t alpha, intType *outArr, int sf, bool doTruncation) ;
+
+void Max(int32_t size, intType *inArr, int32_t alpha, intType *outArr, int sf, bool doTruncation) ;
 
 void Relu(int32_t size, intType *inArr, intType *outArr, int sf,
           bool doTruncation);
+
+// void Clip(int32_t size, int64_t alpha, int64_t beta, intType *inArr, intType *outArr, int sf, bool doTruncation) ;
+
+void HardSigmoid(int32_t size, intType *inArr, intType *outArr, int sf, bool doTruncation);
 
 void MaxPool(int32_t N, int32_t H, int32_t W, int32_t C, int32_t ksizeH,
              int32_t ksizeW, int32_t zPadHLeft, int32_t zPadHRight,
@@ -195,4 +219,35 @@ T *make_array(size_t s1, size_t s2, size_t s3, size_t s4, size_t s5) {
   return new T[s1 * s2 * s3 * s4 * s5];
 }
 
+template <typename T>
+void swapChannels(
+    std::vector<std::vector<std::vector<std::vector<T>>>>& arr,
+    const std::vector<size_t>& indices,
+    bool swapInput) {
+
+    if (indices.empty()) {
+        // No indices provided, do nothing
+        return;
+    }
+    
+    // // shuffle indice's order: can be done on server in the offline phase, this just a example code
+    // std::vector<size_t> shuffled_indices = indices;
+    // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    // std::default_random_engine rng(seed);
+    // std::shuffle(shuffled_indices.begin(), shuffled_indices.end(), rng);
+
+    size_t num_channels = arr[0][0][0].size();
+
+    for (size_t i = 0; i < indices.size(); ++i) {
+        if (indices[i] < num_channels && i < num_channels) {
+            for (auto& mat1 : arr) {
+                for (auto& mat2 : mat1) {
+                    for (auto& mat3 : mat2) {
+                        std::swap(mat3[i], mat3[indices[i]]);
+                    }
+                }
+            }
+        }
+    }
+}
 #endif
