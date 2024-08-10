@@ -482,6 +482,7 @@ if __name__ == '__main__':
     print(tile_list)
     
     # # # output partial replace order:
+    # initial tile locator:
     test = search_range
     partial_order = cal_importance(guilde_net)
     threshold = 1
@@ -489,7 +490,7 @@ if __name__ == '__main__':
     net = res.ResNet50(res.Bottleneck,[3, 4, 6, 3], replace_point=test, cn=[2, 2, 2, 2], partial=partial_order)
     net.load_state_dict(pre_trained_model, strict=True)     
     net = net.to(device)
-
+    # calculate apply score for each input channel:
     hspg_score, replace_order = search_net(net, guilde_net, 1, threshold, pruned=True)
     torch.save(replace_order, save_location + 'inital_mask_prun.pth')
 
@@ -498,27 +499,18 @@ if __name__ == '__main__':
     del net
     
     acc = 0
-    thres = 1.6251
-    step = 1 - 0.8603
     ar= [[20, 20, 170, 20], [120, 40, 340, 40], [240, 80, 672, 80], [448, 128, 1344, 128]]
-
-    # while (acc < guilde_acc) and (thres >= 0.05):
     step = (1 - 0.8603) / 4
     bottom = 0.7238062500000001
     top = 1.3457000000000012
     step = (top - bottom) / 4
     thres = top + 4 * step
-    # search_target = list(range(48))
-    # [search_target.remove(x) for x in remove_list]
-    # partial_order, test = cal_partial_order(replace_order, search_target, threshold=thres)
-    # print('Output HSPG identifier partial_order when threshold = ', thres)
-    # net = res.ResNet50(res.Bottleneck,[3,4,6,3], replace_point=test, apply_ratio=ar, partial=partial_order)
-    # del partial_order, test
     last_order, test = cal_partial_order(replace_order, search_range, threshold=thres)
     last_order = None
 
     while (acc < guilde_acc) and (thres >= -45):
       search_target = search_range
+      # define tile position:
       partial_order, test = cal_partial_order(replace_order, search_target, threshold=thres)
 
       skip_comment = True
