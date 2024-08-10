@@ -426,16 +426,17 @@ if __name__ == '__main__':
     acc = 0
     # find the best threshold = -0.5
     # Partial_Apply:
-    # test = search_range
-    # threshold = 1
-    # counter = 1
-    # partial_order = cal_importance(guilde_net)
-    # net = vgg.VGG(vgg.make_layers(cfgs["D"], select_range=test, ps=ps, tile_type=tile_type, partial=partial_order))
-    # net.load_state_dict(pre_trained_model, strict=True)   
-    # net = net.to(device)  
-    
-    # hspg_score, replace_order = search_net(net, guilde_net, 1, threshold, pruned=True)
-    # torch.save(replace_order, save_location + sub_location + 'inital_mask_prun.pth')
+    test = search_range
+    threshold = 1
+    counter = 1
+    # initial tile locator:
+    partial_order = cal_importance(guilde_net)
+    net = vgg.VGG(vgg.make_layers(cfgs["D"], select_range=test, ps=ps, tile_type=tile_type, partial=partial_order))
+    net.load_state_dict(pre_trained_model, strict=True)   
+    net = net.to(device)  
+    # calculate apply score for each input channel:
+    hspg_score, replace_order = search_net(net, guilde_net, 1, threshold, pruned=True)
+    torch.save(replace_order, save_location + sub_location + 'inital_mask_prun.pth')
 
     replace_order = torch.load(save_location + sub_location + 'inital_mask_prun.pth', map_location=torch.device(device)) 
     # print('finish generate HSPG replace order for Prunned Model')
@@ -445,6 +446,7 @@ if __name__ == '__main__':
 
     while (acc < guilde_acc) and (thres >= -2):
       search_target = search_range
+      # define tile postion:
       partial_order, test = cal_partial_order(replace_order, search_target, threshold=thres)
 
       skip_comment = True
