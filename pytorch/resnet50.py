@@ -422,14 +422,14 @@ if __name__ == '__main__':
     
     # # output partial replace order:
     test = search_range
-    # # Initial network:
+    # # Initial tile locator:
     partial_order = cal_importance(guilde_net)
     threshold = 3
     version_id = 3
     net = res.ResNet50(res.Bottleneck,[3,4,6,3], replace_point=test, cn=[2, 2, 2, 2], partial=partial_order)
     net.load_state_dict(pre_trained_model, strict=True)     
     net = net.to(device)
-    
+    # calculate apply score for each input channel:
     hspg_score, replace_order = search_net(net, guilde_net, 1, threshold)
     torch.save(replace_order, save_location + option_save_location + 'inital_mask_prun.pth')
     print('finish generate apply mask for model')
@@ -453,6 +453,7 @@ if __name__ == '__main__':
 
     while (acc < guilde_acc) and (thres >= -2):
       search_target = list(range(48))
+      # define tile position:
       partial_order, test = cal_partial_order(replace_order, search_target, threshold=thres)
 
       skip_comment = True
