@@ -17,6 +17,10 @@ For vgg16_cifar10 with TILE, we can found it on EzPC/SCI/networks/main_vgg16_TIL
 
 For its baseline on EzPC/SCI/networks/main_vgg16_baseline.cpp
 
+To run the test code, Please complie EzPC first, then try:
+
+./EzPC/SCI/build/bin/<test> r=1 [port=port] & ./EzPC/SCI/build/bin/<test> r=2 [port=port]
+
 # Notes:
 We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning". 
 We are not showing the code related to this paper, as it is not publicly available. We will update this section once their code becomes publicly accessible.
