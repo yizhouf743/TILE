@@ -19,7 +19,7 @@ For its baseline on EzPC/SCI/networks/main_vgg16_baseline.cpp
 
 To run the test code, Please complie EzPC first, then try:
 
-./EzPC/SCI/build/bin/<test> r=1 [port=port] & ./EzPC/SCI/build/bin/<test> r=2 [port=port]
+./EzPC/SCI/build/bin/test r=1 [port=port] & ./EzPC/SCI/build/bin/test r=2 [port=port]
 
 # Notes:
 We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning". 
