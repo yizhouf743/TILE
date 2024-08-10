@@ -536,7 +536,7 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
 
   // check next tile type, if the tile type is external tile, reduce number of output channel:
   // server can shuffle the output ct order and let client learn how to reconstrucute the output ct with 
-  // as original shape with random order.
+  // as original shape with random order. 
   if (ntp == 1){
     CO = (static_cast<float>(nar) * CO / 2) + CO * (1-static_cast<float>(nar));
     // std::cout << "Update CO:" << CO << std::endl;
