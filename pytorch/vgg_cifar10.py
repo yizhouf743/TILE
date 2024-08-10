@@ -412,12 +412,14 @@ if __name__ == '__main__':
     test = search_range
     threshold = 1
     counter = 1
+    # initial tile locator:
     partial_order = cal_importance(guilde_net)
     pre_trained_model = torch.load(save_location + 'baseline_model.pth', map_location=torch.device(device))
     net = vgg.VGG(vgg.make_layers(cfgs["D"], select_range=test, ps=ps, tile_type=tile_type, partial=partial_order))
     net.load_state_dict(pre_trained_model, strict=True)   
     net = net.to(device)  
     
+    # calculate apply score for each input channel:
     hspg_score, replace_order = search_net(net, guilde_net, 1, threshold, pruned=False)
     torch.save(replace_order, save_location + 'inital_mask_prun.pth')
 
@@ -427,6 +429,7 @@ if __name__ == '__main__':
 
     while (acc < guilde_acc) and (thres >= -2):
       search_target = search_range
+      # define tile position:
       partial_order, test = cal_partial_order(replace_order, search_target, threshold=thres)
 
       skip_comment = True
