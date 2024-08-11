@@ -13,17 +13,11 @@ The test code for network can be found in SCI/networks
 
 For example:
 
-For vgg16_cifar10 with TILE, we can found it on EzPC/SCI/networks/main_vgg16_TILE.cpp
-
-For its baseline on EzPC/SCI/networks/main_vgg16_baseline.cpp
-
 To run the test code, Please complie EzPC first, then try:
 
 ./EzPC/SCI/build/bin/\<test\> r=1 [port=port] & ./EzPC/SCI/build/bin/\<test\> r=2 [port=port]
 
-./EzPC/SCI/build/bin/\<network\> r=1 [port=port] < <model_file>  &
 
-./EzPC/SCI/build/bin/\<network\> r=2 [ip=server_address] [port=port] < <image_file> 
 
 # Notes:
 We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning". 
