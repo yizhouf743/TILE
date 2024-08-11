@@ -540,8 +540,10 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
   // its data to reconstrucuture to original shape). 
   // Note this optimization only work on sequential connection such as conv-relu-conv.
   // for skip connection on residual block, this optimization should not be applied.
+  int32_t original_CO = CO;
+
   if (ntp == 1){
-    CO = (static_cast<float>(nar) * CO / 2) + CO * (1-static_cast<float>(nar));
+    CO = int32_t((static_cast<float>(nar) * CO / 2) + CO * (1-static_cast<float>(nar)));
     // std::cout << "Update CO:" << CO << std::endl;
   }
 
@@ -642,22 +644,6 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
     }
   }
 
-  // if (ntp == 1){
-  //   for (int i = 0; i < FH; i++) {
-  //     for (int j = 0; j < FW; j++) {
-  //       for (int k = 0; k < CI; k++) {
-  //         for (int p = 0; p < CO; p++) {
-  //           if (h < outputIndices.size()){
-  //             if (int (h % 2) == 0){
-  //               filterVec[i][j][k][p + 1] = filterVec[i][j][k][p];
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
   // Note: set last two parameter to (true, true) verify the ouptut correctness and see execution detail.
   he_tile->tile_convolution(N, H, W, CI, FH, FW, CO, tile_type, apply_ratio, zPadHLeft, zPadHRight, zPadWLeft,
                       zPadWRight, strideH, strideW, inputVec, filterVec, outputVec,
@@ -675,6 +661,34 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
     }
   }
 
+  //  Reconstrucutre the output and make it same as original shape:
+  if (ntp == 1 && nar != 0) {
+    for (int i = 0; i < N; i++) {
+          for (int j = 0; j < H; j++) {
+              for (int k = 0; k < W; k++) {
+                  for (int p = 0; p < original_CO; p++) {
+                      if (p < break_point) {
+                          int source_channel = p % 2;
+                          Arr4DIdxRowM(outArr, N, H, W, original_CO, i, j, k, p) =
+                              Arr4DIdxRowM(outArr, N, H, W, CO, i, j, k, source_channel);
+                          if (p + 1 < original_CO) {
+                              Arr4DIdxRowM(outArr, N, H, W, original_CO, i, j, k, p + 1) =
+                                  Arr4DIdxRowM(outArr, N, H, W, original_CO, i, j, k, p);
+                              p++; 
+                          }
+                      } else {
+                          // for p >= break_point:
+                          int source_channel = p - outputIndices.size();
+                          if (source_channel < original_CO && source_channel >= 0) {
+                              Arr4DIdxRowM(outArr, N, H, W, original_CO, i, j, k, p) =
+                                  Arr4DIdxRowM(outArr, N, H, W, CO, i, j, k, source_channel);
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  }
 #endif
 
 #ifdef LOG_LAYERWISE
