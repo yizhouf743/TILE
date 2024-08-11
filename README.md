@@ -17,7 +17,7 @@ To run the test code, Please complie EzPC first, then try:
 
 ./EzPC/SCI/build/bin/\<test\> r=1 [port=port] & ./EzPC/SCI/build/bin/\<test\> r=2 [port=port]
 
-
+The code for end-to-end network testing will be update soon.
 
 # Notes:
 We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning". 
