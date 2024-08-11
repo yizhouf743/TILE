@@ -21,9 +21,9 @@ To run the test code, Please complie EzPC first, then try:
 
 ./EzPC/SCI/build/bin/\<test\> r=1 [port=port] & ./EzPC/SCI/build/bin/\<test\> r=2 [port=port]
 
-./EzPC/SCI/build/bin/\<network\> r=1 [port=port] < <model_file> // Server &
+./EzPC/SCI/build/bin/\<network\> r=1 [port=port] < <model_file>  &
 
-./EzPC/SCI/build/bin/\<network\> r=2 [ip=server_address] [port=port] < <image_file> // Client
+./EzPC/SCI/build/bin/\<network\> r=2 [ip=server_address] [port=port] < <image_file> 
 
 # Notes:
 We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning". 
