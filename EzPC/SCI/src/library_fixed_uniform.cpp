@@ -662,12 +662,12 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
   }
 
   //  Reconstrucutre the output and make it same as original shape:
-  if (ntp == 1 && nar != 0) {
+  if (ntp == 1 && nar != 0 && CO != original_CO) {
     for (int i = 0; i < N; i++) {
           for (int j = 0; j < H; j++) {
               for (int k = 0; k < W; k++) {
                   for (int p = 0; p < original_CO; p++) {
-                      if (p < break_point) {
+                      if (p < outputIndices.size()) {
                           int source_channel = p % 2;
                           Arr4DIdxRowM(outArr, N, H, W, original_CO, i, j, k, p) =
                               Arr4DIdxRowM(outArr, N, H, W, CO, i, j, k, source_channel);
