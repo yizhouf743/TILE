@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
   amap.arg("pr", pad_r, "Right Padding");
   amap.arg("fp", filter_precision, "Filter Precision");
   amap.arg("tp", tile_type, "tile type to apply on ciphertext: Internal Tile = 0; External Tile = 1");
-  amap.arg("ar", apply_ratio, "percentage of feature map(0)/channel(1) can apply Tile");
+  amap.arg("ar", apply_ratio, "percentage of input channel can apply Tile");
   amap.parse(argc, argv);
   prime_mod = sci::default_prime_mod.at(bitlength);
 
