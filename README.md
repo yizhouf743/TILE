@@ -7,9 +7,7 @@ pytorch: The implmentaion for TILE on VGG16 and Resnet50 on Cifar10 and Tiny-Ima
 
 EzPC: A framework that help to covert pytorch code to HE-friendly cpp code and test TILE module/network performance. 
 
-The test code for Conv-Relu(the basic unit on vgg and resnet) with TILE on SCI/tests/test_field_TILE.cpp
-
-The test code for network can be found in SCI/networks
+The test code for Conv-Relu(the basic unit on vgg and resnet) with TILE on SCI/tests/test_field_TILE.cpp, this is example for the basic function we use for network testing.
 
 For example:
 
