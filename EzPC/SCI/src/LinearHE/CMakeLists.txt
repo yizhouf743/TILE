@@ -23,6 +23,7 @@ add_library(SCI-LinearHE
     fc-field.cpp
     elemwise-prod-field.cpp
     utils-HE.cpp
+    TILE-field.cpp
 )
 
 target_link_libraries(SCI-LinearHE
