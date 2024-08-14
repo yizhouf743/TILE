@@ -156,57 +156,41 @@ vector<vector<uint64_t>> preprocess_image_OP1(Image &image, TILEMetadata data) {
 // the zero padding by zero-puncturing the masks. This function can evaluate
 // plaintexts and ciphertexts.
 vector<vector<Ciphertext>> filter_rotations_in(vector<Ciphertext> &input,
-                                            const TILEMetadata &data,
-                                            Evaluator *evaluator,
-                                            GaloisKeys *gal_keys) {
-  vector<vector<Ciphertext>> rotations(input.size(), vector<Ciphertext>(data.filter_size));
-  int pad_h = data.pad_t + data.pad_b;
-  int pad_w = data.pad_l + data.pad_r;
-  int num_perm = 0;
+                                               const TILEMetadata &data,
+                                               Evaluator *evaluator,
+                                               GaloisKeys *gal_keys) {
+    vector<vector<Ciphertext>> rotations(input.size(), vector<Ciphertext>(data.filter_size));
+    int pad_h = data.pad_t + data.pad_b;
+    int pad_w = data.pad_l + data.pad_r;
 
-  // This tells us how many filters fit on a single row of the padded image
-  int f_per_row = data.image_w + pad_w - data.filter_w + 1;
-  // cout << "[Server] Number of Filters fit on a single row: " << f_per_row << endl;
-  // This offset calculates rotations needed to bring filter from top left
-  // corner of image to the top left corner of padded image
-  int offset = f_per_row * data.pad_t + data.pad_l;
-  // cout << "[Server] Number of Step to finish conv in each row: " << offset << endl;
-  // cout << "[Server] Ciphertext rotation paramters: " << input.size() << endl;
-  vector<int> rotation_pool;
-  rotation_pool = {0, data.image_w + 1, data.image_w - 1, -data.image_w + 1, -data.image_w - 1};
-  // For each element of the filter, rotate the padded image s.t. the top
-  // left position always contains the first element of the image it touches
+    int f_per_row = data.image_w + pad_w - data.filter_w + 1;
+    int offset = f_per_row * data.pad_t + data.pad_l;
+    vector<int> rotation_pool = {0, data.image_w + 1, data.image_w - 1, -data.image_w + 1, -data.image_w - 1};
+
 #pragma omp parallel for num_threads(num_threads) schedule(static) collapse(2)
-  for (int filling_loop = 0; filling_loop < 1; filling_loop ++){
-    for (size_t ct_idx = 0; ct_idx < input.size(); ct_idx++) {
-        int resize_filter;
-        if (ct_idx < data.break_point && data.break_point != 0){
-            resize_filter = 5;
-        }
-        else{
-            resize_filter = data.filter_size;
-        }
-        for (int f = 0; f < resize_filter; f++) {
-          int idx, rot_amt;
-          if (resize_filter == 5){
-              rot_amt = rotation_pool[f];
-              idx = f;
-          }
-          else{
-              int f_row = f / data.filter_w;
-              int f_col = f % data.filter_w;
-              int row_offset = f_row * data.image_w - offset;
-              rot_amt = row_offset + f_col;
-              idx = f_row * data.filter_w + f_col;
-          }
-          evaluator->rotate_rows(input[ct_idx], rot_amt, *gal_keys, rotations[ct_idx][idx]);
-          num_perm += 1;
+    for (int filling_loop = 0; filling_loop < 1; filling_loop++) {
+        for (size_t ct_idx = 0; ct_idx < input.size(); ct_idx++) {
+            int resize_filter = (ct_idx < data.break_point && data.break_point != 0) ? 5 : data.filter_size;
+
+            for (int f = 0; f < resize_filter; f++) {
+                int rot_amt, idx;
+
+                if (resize_filter == 5) {
+                    rot_amt = rotation_pool[f] + data.image_w + 1;
+                    idx = f;
+                } else {
+                    int f_row = f / data.filter_w;
+                    int f_col = f % data.filter_w;
+                    int row_offset = f_row * data.image_w - offset;
+                    rot_amt = row_offset + f_col;
+                    idx = f_row * data.filter_w + f_col;
+                }
+                evaluator->rotate_rows(input[ct_idx], rot_amt, *gal_keys, rotations[ct_idx][idx]);
+            }
         }
     }
-  }
-  // cout << "[Server] Filter output shape: " << rotations.size() << "x" << rotations[0].size() << endl;
-  // cout << "[Server] number of perm in input rot: " << num_perm << endl;
-  return rotations;
+
+    return rotations;
 }
 
 vector<vector<Ciphertext>> filter_rotations_out(vector<Ciphertext> &input,
@@ -260,6 +244,50 @@ vector<vector<vector<Plaintext>>>
 HE_preprocess_filters_OP_in(Filters &filters, const TILEMetadata &data, BatchEncoder &batch_encoder) {
   vector<vector<vector<Plaintext>>> encoded_masks(data.convs, vector<vector<Plaintext>>(data.inp_ct, vector<Plaintext>(data.filter_size)));
   int resize_filter = 5;
+
+  // Helper lambda to calculate values based on filter indices and position
+  auto calculate_values = [&](int f, int out_idx, int inp_base, int chan) -> array<uint64_t, 4> {
+      switch (f) {
+          case 0:
+              return {
+                  filters[out_idx][inp_base + chan](0, 0) + filters[out_idx][inp_base + chan](0, 1) + filters[out_idx][inp_base + chan](1, 0) + filters[out_idx][inp_base + chan](1, 1),
+                  filters[out_idx][inp_base + chan](0, 1) + filters[out_idx][inp_base + chan](0, 2) + filters[out_idx][inp_base + chan](1, 1) + filters[out_idx][inp_base + chan](1, 2),
+                  filters[out_idx][inp_base + chan](1, 0) + filters[out_idx][inp_base + chan](1, 1) + filters[out_idx][inp_base + chan](2, 0) + filters[out_idx][inp_base + chan](2, 1),
+                  filters[out_idx][inp_base + chan](1, 1) + filters[out_idx][inp_base + chan](1, 2) + filters[out_idx][inp_base + chan](2, 1) + filters[out_idx][inp_base + chan](2, 2)
+              };
+          case 1:
+              return {
+                  filters[out_idx][inp_base + chan](2, 2),
+                  filters[out_idx][inp_base + chan](2, 1) + filters[out_idx][inp_base + chan](2, 2),
+                  filters[out_idx][inp_base + chan](1, 2) + filters[out_idx][inp_base + chan](2, 2),
+                  0
+              };
+          case 2:
+              return {
+                  filters[out_idx][inp_base + chan](2, 0) + filters[out_idx][inp_base + chan](2, 1),
+                  filters[out_idx][inp_base + chan](2, 0),
+                  0,
+                  filters[out_idx][inp_base + chan](1, 0) + filters[out_idx][inp_base + chan](2, 0)
+              };
+          case 3:
+              return {
+                  filters[out_idx][inp_base + chan](0, 2) + filters[out_idx][inp_base + chan](1, 2),
+                  0,
+                  filters[out_idx][inp_base + chan](0, 2),
+                  filters[out_idx][inp_base + chan](0, 1) + filters[out_idx][inp_base + chan](0, 2)
+              };
+          case 4:
+              return {
+                  0,
+                  filters[out_idx][inp_base + chan](0, 0) + filters[out_idx][inp_base + chan](1, 0),
+                  filters[out_idx][inp_base + chan](0, 0) + filters[out_idx][inp_base + chan](0, 1),
+                  filters[out_idx][inp_base + chan](0, 0)
+              };
+          default:
+              return {0, 0, 0, 0};
+      }
+  };
+
 #pragma omp parallel for num_threads(num_threads) schedule(static) collapse(2)
   for (int perm = 0; perm < data.half_perms; perm += 2) {
     for (int rot = 0; rot < data.half_rots; rot++) {
@@ -296,138 +324,52 @@ HE_preprocess_filters_OP_in(Filters &filters, const TILEMetadata &data, BatchEnc
                       uint64_t val_1_1, val_1_2, val_2_1, val_2_2;
                       uint64_t val2_1_1, val2_1_2, val2_2_1, val2_2_2;
                       // cout<< out_idx << "x" << inp_base + chan << endl;
+                      auto vals = calculate_values(f, out_idx, inp_base, chan);
+                      auto vals2 = calculate_values(f, out_idx2, inp_base, chan);
 
-                      if (f == 0){
-                          val_1_1 = filters[out_idx][inp_base + chan](0, 0) + filters[out_idx][inp_base + chan](0, 1) + filters[out_idx][inp_base + chan](1, 0) + filters[out_idx][inp_base + chan](1, 1);
-                          val_1_2 = filters[out_idx][inp_base + chan](0, 1) + filters[out_idx][inp_base + chan](0, 2) + filters[out_idx][inp_base + chan](1, 1) + filters[out_idx][inp_base + chan](1, 2); 
-                          val_2_1 = filters[out_idx][inp_base + chan](1, 0) + filters[out_idx][inp_base + chan](1, 1) + filters[out_idx][inp_base + chan](2, 0) + filters[out_idx][inp_base + chan](2, 1);
-                          val_2_2 = filters[out_idx][inp_base + chan](1, 1) + filters[out_idx][inp_base + chan](1, 2) + filters[out_idx][inp_base + chan](2, 1) + filters[out_idx][inp_base + chan](2, 2); 
-                      
-                          val2_1_1 = filters[out_idx2][inp_base + chan](0, 0) + filters[out_idx2][inp_base + chan](0, 1) + filters[out_idx2][inp_base + chan](1, 0) + filters[out_idx2][inp_base + chan](1, 1);
-                          val2_1_2 = filters[out_idx2][inp_base + chan](0, 1) + filters[out_idx2][inp_base + chan](0, 2) + filters[out_idx2][inp_base + chan](1, 1) + filters[out_idx2][inp_base + chan](1, 2);            
-                          val2_2_1 = filters[out_idx2][inp_base + chan](1, 0) + filters[out_idx2][inp_base + chan](1, 1) + filters[out_idx2][inp_base + chan](2, 0) + filters[out_idx2][inp_base + chan](2, 1); 
-                          val2_2_2 = filters[out_idx2][inp_base + chan](1, 1) + filters[out_idx2][inp_base + chan](1, 2) + filters[out_idx2][inp_base + chan](2, 1) + filters[out_idx2][inp_base + chan](2, 2); 
-                          
+                      if (define_position) {
+                          for (auto &val : vals) val = neg_mod(val, static_cast<int64_t>(prime_mod));
+                          for (auto &val : vals2) val = neg_mod(val, static_cast<int64_t>(prime_mod));
+                      } else {
+                          vals.fill(0);
+                          vals2.fill(0);
                       }
-                      else if (f == 1) {
-                          val_1_1 = filters[out_idx][inp_base + chan](2, 2);    
-                          val_1_2 = filters[out_idx][inp_base + chan](2, 1) + filters[out_idx][inp_base + chan](2, 2); 
-                          val_2_1 = filters[out_idx][inp_base + chan](1, 2) + filters[out_idx][inp_base + chan](2, 2);
-                          val_2_2 = 0; 
-                          
-                          val2_1_1 = filters[out_idx2][inp_base + chan](2, 2);
-                          val2_1_2 = filters[out_idx2][inp_base + chan](2, 1) + filters[out_idx2][inp_base + chan](2, 2); 
-                          val2_2_1 = filters[out_idx2][inp_base + chan](1, 2) + filters[out_idx2][inp_base + chan](2, 2);
-                          val2_2_2 = 0;                          
-                      }
-                      else if (f == 2) {
-                          val_1_1 = filters[out_idx][inp_base + chan](2, 0) + filters[out_idx][inp_base + chan](2, 1); 
-                          val_1_2 = filters[out_idx][inp_base + chan](2, 0);
-                          val_2_1 = 0; 
-                          val_2_2 = filters[out_idx][inp_base + chan](1, 0) + filters[out_idx][inp_base + chan](2, 0);
-                      
-                          val2_1_1 = filters[out_idx2][inp_base + chan](2, 0) + filters[out_idx2][inp_base + chan](2, 1);     
-                          val2_1_2 = filters[out_idx2][inp_base + chan](2, 0);
-                          val2_2_1 = 0; 
-                          val2_2_2 = filters[out_idx2][inp_base + chan](1, 0) + filters[out_idx2][inp_base + chan](2, 0);
-                      }
-                      else if (f == 3) {
-                          val_1_1 = filters[out_idx][inp_base + chan](0, 2) + filters[out_idx][inp_base + chan](1, 2);
-                          val_1_2 = 0; 
-                          val_2_1 = filters[out_idx][inp_base + chan](0, 2);
-                          val_2_2 = filters[out_idx][inp_base + chan](0, 1) + filters[out_idx][inp_base + chan](0, 2);
-
-                          val2_1_1 = filters[out_idx2][inp_base + chan](0, 2) + filters[out_idx2][inp_base + chan](1, 2); 
-                          val2_1_2 = 0;      
-                          val2_2_1 = filters[out_idx2][inp_base + chan](0, 2);
-                          val2_2_2 = filters[out_idx2][inp_base + chan](0, 1) + filters[out_idx2][inp_base + chan](0, 2); 
-                      }
-                      else {     
-                          val_1_1 = 0; 
-                          val_1_2 = filters[out_idx][inp_base + chan](0, 0) + filters[out_idx][inp_base + chan](1, 0);  
-                          val_2_1 = filters[out_idx][inp_base + chan](0, 0) + filters[out_idx][inp_base + chan](0, 1);    
-                          val_2_2 = filters[out_idx][inp_base + chan](0, 0);
-
-                          val2_1_1 = 0;
-                          val2_1_2 = filters[out_idx2][inp_base + chan](0, 0) + filters[out_idx2][inp_base + chan](1, 0);    
-                          val2_2_1 = filters[out_idx2][inp_base + chan](0, 0) + filters[out_idx2][inp_base + chan](0, 1); 
-                          val2_2_2 = filters[out_idx2][inp_base + chan](0, 0);    
-                      }
-
-                      val_1_1 = define_position ? neg_mod(val_1_1, (int64_t)prime_mod) : 0;
-                      val_1_2 = define_position ? neg_mod(val_1_2, (int64_t)prime_mod) : 0;
-                      val_2_1 = define_position ? neg_mod(val_2_1, (int64_t)prime_mod) : 0;
-                      val_2_2 = define_position ? neg_mod(val_2_2, (int64_t)prime_mod) : 0;
-                      // cout << "select value: " << val_1_1 << " " <<  val_1_2 << " " << val_2_1 << " " << val_2_2 << " " << chan << endl;
-                      
-                      val2_1_1 = define_position ? neg_mod(val2_1_1, (int64_t)prime_mod) : 0;
-                      val2_1_2 = define_position ? neg_mod(val2_1_2, (int64_t)prime_mod) : 0;
-                      val2_2_1 = define_position ? neg_mod(val2_2_1, (int64_t)prime_mod) : 0;
-                      val2_2_2 = define_position ? neg_mod(val2_2_2, (int64_t)prime_mod) : 0;
 
                       // Iterate through the whole image and figure out which
                       // values the filter value touches - this is the same
                       // as for input packing
 
-                      for (int curr_h = 0; curr_h < data.image_h;
-                          curr_h += data.stride_h) {
+                    for (int curr_h = 0; curr_h < data.image_h; curr_h += data.stride_h) {
                       for (int curr_w = 0; curr_w < data.image_w; curr_w += data.stride_w) {
                           bool zero;
+                          int re_curr_h = curr_h + 1;
+                          int re_curr_w = curr_w + 1;
                           if (f == 0){
-                              zero = (curr_w <= data.pad_l) || (curr_h <= data.pad_t) || (curr_w >= data.image_w -  1) || (curr_h >= data.image_h - 1);
+                              zero = (re_curr_h <= data.pad_l) || (re_curr_h <= data.pad_t) || (re_curr_w >= data.image_w -  1) || (re_curr_h >= data.image_h - 1);
                               }
                           else if (f == 1) {
-                              zero = (curr_w <= data.pad_l) || (curr_h <= data.pad_t) || (curr_w >= data.image_w -  2) || (curr_h >= data.image_h - 2);
+                              zero = (re_curr_w <= data.pad_l) || (re_curr_h <= data.pad_t) || (re_curr_w >= data.image_w -  2) || (re_curr_h >= data.image_h - 2);
                               }
                           else if (f == 2) {
-                              zero = (curr_w <= data.pad_l + 1) || (curr_h <= data.pad_t) || (curr_w >= data.image_w -  1) || (curr_h >= data.image_h - 2);
+                              zero = (re_curr_w <= data.pad_l + 1) || (re_curr_h <= data.pad_t) || (re_curr_w >= data.image_w -  1) || (re_curr_h >= data.image_h - 2);
                               }
                           else if (f == 3) {
-                              zero = (curr_w <= data.pad_l) || (curr_h <= data.pad_t + 1) || (curr_w >= data.image_w -  1) || (curr_h >= data.image_h - 1);
+                              zero = (re_curr_w <= data.pad_l) || (re_curr_h <= data.pad_t + 1) || (re_curr_w >= data.image_w -  1) || (re_curr_h >= data.image_h - 1);
                               }
                           else if(f == 4) {
-                              zero = (curr_w <= data.pad_l + 1) || (curr_h <= data.pad_t + 1) || (curr_w >= data.image_w -  1) || (curr_h >= data.image_h - 1);
+                              zero = (re_curr_w <= data.pad_l + 1) || (re_curr_h <= data.pad_t + 1) || (re_curr_w >= data.image_w -  1) || (re_curr_h >= data.image_h - 1);
                               }
                   
                           // Calculate which half of ciphertext the output channel
                           // falls in and the offest from that half,
+
                           int idx = half_idx * data.pack_num + chan * data.image_size +
                                   curr_h * data.image_w + curr_w;     
-                          // Add both values to appropiate permutations
-                          if ((curr_h % 2) == 0){
-                              if ((curr_w % 2) == 0){
-                              masks[0][idx] = zero ? 0 : val_1_1;
-                              }
-                              else{
-                              masks[0][idx] = zero ? 0 : val_1_2;
-                              }
-                          } else {
-                              if ((curr_w % 2) == 0){
-                              masks[0][idx] = zero ? 0 : val_2_1;
-                              }
-                              else{
-                              masks[0][idx] = zero ? 0 : val_2_2;
-                              }         
-                          }  
-
+                          masks[0][idx] = zero ? 0 : (curr_h % 2 == 0 ? (curr_w % 2 == 0 ? vals[3] : vals[2]) : (curr_w % 2 == 0 ? vals[1] : vals[0]));
                           if (data.half_perms > 1) {
-                              if ((curr_h % 2) == 0){
-                                  if ((curr_w % 2) == 0){
-                                  masks[1][idx] = zero ? 0 : val2_1_1;
-                                  }
-                                  else{
-                                  masks[1][idx] = zero ? 0 : val2_1_2;
-                                  }
-                              } else {
-                                  if ((curr_w % 2) == 0){
-                                  masks[1][idx] = zero ? 0 : val2_2_1;
-                                  }
-                                  else{
-                                  masks[1][idx] = zero ? 0 : val2_2_2;
-                                  }         
-                              }  
+                              masks[1][idx] = zero ? 0 : (curr_h % 2 == 0 ? (curr_w % 2 == 0 ? vals2[3] : vals2[2]) : (curr_w % 2 == 0 ? vals2[1] : vals2[0]));
                           }
-                          }
+                        }
                       }
                     }
                   }
@@ -757,51 +699,29 @@ HE_preprocess_filters_OP_out(Filters &filters, const TILEMetadata &data,
 // Performs convolution for an output packed image. Returns the intermediate
 // rotation sets
 vector<Ciphertext> HE_conv_OP_in(vector<vector<vector<Plaintext>>> &masks,
-                              vector<vector<Ciphertext>> &rotations,
-                              const TILEMetadata &data, Evaluator &evaluator,
-                              Ciphertext &zero) {
-  vector<Ciphertext> result(data.convs * 2);
-  
-  int num_mul = 0;
-  int num_add = 0;
-  // Multiply masks and add for each convolution
-#pragma omp parallel for num_threads(num_threads) schedule(static)
-  for (int conv_idx = 0; conv_idx < data.convs; conv_idx++) {
-    result[conv_idx] = zero;
-    result[conv_idx + data.convs] = zero;
-    for (int ct_idx = 0; ct_idx < data.inp_ct; ct_idx++) {
-      int resize_filter_size;
-      if (ct_idx < data.break_point && data.break_point != 0){
-        resize_filter_size = 5;
-      }
-      else{
-        resize_filter_size = data.filter_size;
-      }
-        
-      for (int f = 0; f < resize_filter_size; f++) {
-        Ciphertext tmp;
-        if (!masks[conv_idx][ct_idx][f].is_zero()) {
-          evaluator.multiply_plain(rotations[ct_idx][f], masks[conv_idx][ct_idx][f], tmp);
-          if (ct_idx < data.break_point){
-            evaluator.add_inplace(result[conv_idx], tmp);
-          }
-          else{
-            evaluator.add_inplace(result[conv_idx + data.convs], tmp);
-          }
-          
-          num_mul += 1;
-          num_add += 1;
-        }
-      }
-    }
-    // cout << conv_idx << endl;
-    // evaluator.mod_switch_to_next_inplace(result[conv_idx]);
-  }
-  // cout << "[Server] number of mul in conv: " << num_mul << endl;
-  // cout << "[Server] number of add in conv: " << num_add << endl;
-  return result;
-}
+                                 vector<vector<Ciphertext>> &rotations,
+                                 const TILEMetadata &data, Evaluator &evaluator,
+                                 Ciphertext &zero) {
+    vector<Ciphertext> result(data.convs, zero);
 
+#pragma omp parallel for num_threads(num_threads) schedule(static)
+    for (int conv_idx = 0; conv_idx < data.convs; conv_idx++) {
+        Ciphertext tmp; 
+        int resize_filter;
+        for (int ct_idx = 0; ct_idx < data.inp_ct; ct_idx++) {
+            resize_filter = (ct_idx < data.break_point && data.break_point != 0) ? 5 : data.filter_size;
+
+            for (int f = 0; f < resize_filter; f++) {
+                if (!masks[conv_idx][ct_idx][f].is_zero()) {
+                    evaluator.multiply_plain(rotations[ct_idx][f], masks[conv_idx][ct_idx][f], tmp);
+                    evaluator.add_inplace(result[conv_idx], tmp);
+                }
+            }
+        }
+        evaluator.mod_switch_to_next_inplace(result[conv_idx]);
+    }
+    return result;
+}
 // Performs convolution for an output packed image. Returns the intermediate
 // rotation sets
 vector<Ciphertext> HE_conv_OP_out(vector<vector<vector<Plaintext>>> &masks,
@@ -809,9 +729,6 @@ vector<Ciphertext> HE_conv_OP_out(vector<vector<vector<Plaintext>>> &masks,
                               const TILEMetadata &data, Evaluator &evaluator,
                               Ciphertext &zero) {
   vector<Ciphertext> result(data.convs);
-
-  // Multiply masks and add for each convolution
-  int mul_counter = 0;
 #pragma omp parallel for num_threads(num_threads) schedule(static)
   for (int conv_idx = 0; conv_idx < data.convs; conv_idx++) {
     result[conv_idx] = zero;
@@ -821,23 +738,21 @@ vector<Ciphertext> HE_conv_OP_out(vector<vector<vector<Plaintext>>> &masks,
         if (!masks[conv_idx][ct_idx][f].is_zero()) {
           evaluator.multiply_plain(rotations[ct_idx][f], masks[conv_idx][ct_idx][f], tmp);
           evaluator.add_inplace(result[conv_idx], tmp);
-          mul_counter += 1;
         }
       }
     }
     evaluator.mod_switch_to_next_inplace(result[conv_idx]);
   }
-  // cout << "number of multiply times: " << mul_counter << endl;
   return result;
 }
 
 // Takes the result of an output-packed convolution, and rotates + adds all the
 // ciphertexts to get a tightly packed output
 vector<Ciphertext> HE_output_rotations_in(vector<Ciphertext> &convs,
-                                       const TILEMetadata &data,
-                                       Evaluator &evaluator,
-                                       GaloisKeys &gal_keys, Ciphertext &zero,
-                                       vector<Ciphertext> &enc_noise) {
+                                          const TILEMetadata &data,
+                                          Evaluator &evaluator,
+                                          GaloisKeys &gal_keys, Ciphertext &zero,
+                                          vector<Ciphertext> &enc_noise) {
   vector<Ciphertext> partials(data.half_perms);
   Ciphertext zero_next_level = zero;
   evaluator.mod_switch_to_next_inplace(zero_next_level);
@@ -846,76 +761,64 @@ vector<Ciphertext> HE_output_rotations_in(vector<Ciphertext> &convs,
   for (int ct_idx = 0; ct_idx < data.out_ct; ct_idx++) {
     result[ct_idx] = zero_next_level;
   }
-  vector<Ciphertext> partials_result(data.convs);
-  auto order_transfer_time = 0;
-  // For each half perm, add up all the inside channels of each half
-#pragma omp parallel for num_threads(num_threads) schedule(static)
-  for (int conv_idx = 0; conv_idx < data.convs; conv_idx++) {
-    partials_result[conv_idx] = zero;
-    auto t0 = std::chrono::high_resolution_clock::now();
-    int rot_amt = data.image_w + 1;
-    evaluator.rotate_rows_inplace(convs[conv_idx], rot_amt , gal_keys);
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(t1 -t0);
-    order_transfer_time += delta.count();
 
-    evaluator.add_inplace(partials_result[conv_idx], convs[conv_idx]);
-    evaluator.add_inplace(partials_result[conv_idx], convs[conv_idx + data.convs]);
-    evaluator.mod_switch_to_next_inplace(partials_result[conv_idx]);
-    }
+  // For each half perm, add up all the inside channels of each half
+  // if (data.chans_per_half > 1){
 #pragma omp parallel for num_threads(num_threads) schedule(static)
-  for (int perm = 0; perm < data.half_perms; perm += 2) {
-    partials[perm] = zero_next_level;
-    if (data.half_perms > 1)
-      partials[perm + 1] = zero_next_level;
-    // The output channel the current ct starts from
-    int total_rots = data.half_rots;
-    for (int in_rot = 0; in_rot < total_rots; in_rot++) {
-      int conv_idx = perm * data.half_rots + in_rot;
-      int rot_amt;
-      rot_amt = -neg_mod(-in_rot, (int64_t)data.chans_per_half) * data.image_size;
-      evaluator.rotate_rows_inplace(partials_result[conv_idx], rot_amt , gal_keys);
-      evaluator.add_inplace(partials[perm], partials_result[conv_idx]);
-      // Do the same for the column swap if it exists
-      if (data.half_perms > 1) {
-        evaluator.rotate_rows_inplace(partials_result[conv_idx + data.half_rots], rot_amt,
-                                      gal_keys);
-        evaluator.add_inplace(partials[perm + 1], partials_result[conv_idx + data.half_rots]);
+    for (int perm = 0; perm < data.half_perms; perm += 2) {
+      partials[perm] = zero_next_level;
+      if (data.half_perms > 1)
+        partials[perm + 1] = zero_next_level;
+      // The output channel the current ct starts from
+      int total_rots = data.half_rots;
+      for (int in_rot = 0; in_rot < total_rots; in_rot++) {
+        int conv_idx = perm * data.half_rots + in_rot;
+        int rot_amt;
+        rot_amt = -neg_mod(-in_rot, (int64_t)data.chans_per_half) * data.image_size;
+
+        evaluator.rotate_rows_inplace(convs[conv_idx], rot_amt, gal_keys);
+        evaluator.add_inplace(partials[perm], convs[conv_idx]);
+        // Do the same for the column swap if it exists
+        if (data.half_perms > 1) {
+          evaluator.rotate_rows_inplace(convs[conv_idx + data.half_rots], rot_amt,
+                                        gal_keys);
+          evaluator.add_inplace(partials[perm + 1],
+                                convs[conv_idx + data.half_rots]);
+        }
       }
-    }
-    // The correct index for the correct ciphertext in the final output
-    int out_idx = (perm / 2) % data.out_ct;
-    if (perm == 0) {
-      // The first set of convolutions is aligned correctly
-      evaluator.add_inplace(result[out_idx], partials[perm]);
-      ///*
-      if (data.out_halves == 1 && data.inp_halves > 1) {
-        // If the output fits in a single half but the input
-        // doesn't, add the two columns
-        evaluator.rotate_columns_inplace(partials[perm], gal_keys);
+      // The correct index for the correct ciphertext in the final output
+      int out_idx = (perm / 2) % data.out_ct;
+      if (perm == 0) {
+        // The first set of convolutions is aligned correctly
         evaluator.add_inplace(result[out_idx], partials[perm]);
-      }
-      //*/
-      // Do the same for column swap if exists and we aren't on a repeat
-      if (data.half_perms > 1) {
-        evaluator.rotate_columns_inplace(partials[perm + 1], gal_keys);
-        evaluator.add_inplace(result[out_idx], partials[perm + 1]);
-      }
-    } else {
-      // Rotate the output ciphertexts by one and add
-      evaluator.add_inplace(result[out_idx], partials[perm]);
-      // If we're on a tight half we add both halves together and
-      // don't look at the column flip
-      if (data.half_perms > 1) {
-        evaluator.rotate_columns_inplace(partials[perm + 1], gal_keys);
-        evaluator.add_inplace(result[out_idx], partials[perm + 1]);
+        ///*
+        if (data.out_halves == 1 && data.inp_halves > 1) {
+          // If the output fits in a single half but the input
+          // doesn't, add the two columns
+          evaluator.rotate_columns_inplace(partials[perm], gal_keys);
+          evaluator.add_inplace(result[out_idx], partials[perm]);
+        }
+        //*/
+        // Do the same for column swap if exists and we aren't on a repeat
+        if (data.half_perms > 1) {
+          evaluator.rotate_columns_inplace(partials[perm + 1], gal_keys);
+          evaluator.add_inplace(result[out_idx], partials[perm + 1]);
+        }
+      } else {
+        // Rotate the output ciphertexts by one and add
+        evaluator.add_inplace(result[out_idx], partials[perm]);
+        // If we're on a tight half we add both halves together and
+        // don't look at the column flip
+        if (data.half_perms > 1) {
+          evaluator.rotate_columns_inplace(partials[perm + 1], gal_keys);
+          evaluator.add_inplace(result[out_idx], partials[perm + 1]);
+        }
       }
     }
-  }
+  //// Add the noise vector to remove any leakage
   for (int ct_idx = 0; ct_idx < data.out_ct; ct_idx++) {
     evaluator.add_inplace(result[ct_idx], enc_noise[ct_idx]);
   }
-  // cout << "[Server] addition time for transfer method format: " << order_transfer_time/ num_threads << " ms" << endl;
   return result;
 }
 
@@ -1219,7 +1122,6 @@ void TILEField::non_strided_conv(int32_t H, int32_t W, int32_t CI, int32_t FH,
     }
 
     if (verbose)
-      // cout << "[Server] Pre-Process Filter Shape: " << masks_OP.size() << "x" << masks_OP[0].size() << "x" << masks_OP[0][0].size() << endl;
       cout << "[Server] Filters processed" << endl;
 
     vector<Ciphertext> result;
@@ -1230,18 +1132,13 @@ void TILEField::non_strided_conv(int32_t H, int32_t W, int32_t CI, int32_t FH,
     }
     recv_encrypted_vector(io, ct);
     
-    auto t0 = std::chrono::high_resolution_clock::now();
     if (tp == 0){
         rotations = filter_rotations_in(ct, data, evaluator_, gal_keys_);
     }
     else{
         rotations = filter_rotations_out(ct, data, evaluator_, gal_keys_);
     }
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto delta1 = std::chrono::duration_cast<std::chrono::milliseconds>(t1 -t0);
     if (verbose)
-      // cout << "[Server] Time for ciphertext input rotation: " << delta1.count() << "ms" << endl;
-      // cout << "[Server] Ciphertext input rotation Shape: " << rotations.size() << "x" << rotations[0].size() << "x" << rotations[0][0].size() << endl;
       cout << "[Server] Ciphertext input Rotations done" << endl;
 
 
@@ -1249,36 +1146,26 @@ void TILEField::non_strided_conv(int32_t H, int32_t W, int32_t CI, int32_t FH,
     PRINT_NOISE_BUDGET(decryptor_, rotations[0][0], "before homomorphic convolution");
 #endif
     vector<Ciphertext> conv_result;
-    auto t2 = std::chrono::high_resolution_clock::now();
     if (tp == 0){
         conv_result = HE_conv_OP_in(masks_OP, rotations, data, *evaluator_, *zero_);
     }
     else{
         conv_result = HE_conv_OP_out(masks_OP, rotations, data, *evaluator_, *zero_);
     }
-    auto t3 = std::chrono::high_resolution_clock::now();
-    auto delta2 = std::chrono::duration_cast<std::chrono::milliseconds>(t3 -t2);
     if (verbose)
-      // cout << "[Server] Time for ciphertext convolution: " << delta2.count() << "ms" << endl;
       cout << "[Server] Convolution done" << endl;
-      // cout << "[Server] Convolution result shape: " << conv_result.size() << "x" << conv_result[0].size() << endl;
 
 #ifdef HE_DEBUG
     PRINT_NOISE_BUDGET(decryptor_, conv_result[0], "after homomorphic convolution");
 #endif
 
-    auto t4 = std::chrono::high_resolution_clock::now();
-    // result = conv_result;
     if (tp == 0){
         result = HE_output_rotations_in(conv_result, data, *evaluator_, *gal_keys_, *zero_, noise_ct);
     }
     else{
         result = HE_output_rotations_out(conv_result, data, *evaluator_, *gal_keys_, *zero_, noise_ct);
     }
-    auto t5 = std::chrono::high_resolution_clock::now();
-    auto delta3 = std::chrono::duration_cast<std::chrono::milliseconds>(t5 -t4);
     if (verbose)
-      // cout << "[Server] Time for output rotation: " << delta3.count() << "ms" << endl;
       cout << "[Server] Output Rotations done" << endl;
 
 #ifdef HE_DEBUG
