@@ -586,7 +586,8 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
   // rewrite input data if it inside a tile structure:
   // define the range for apply tile
   int padding_image_size = next_pow2(H * W);
-  int chan_per_ciphertext = 8192 / 2 / padding_image_size;
+  int slot_count = min(SEAL_POLY_MOD_DEGREE_MAX, max(8192, 2 * next_pow2(H * W)));
+  int chan_per_ciphertext = slot_count / 2 / padding_image_size;
   int break_point = ceil((float) CI * apply_ratio / chan_per_ciphertext) * chan_per_ciphertext;
   // std::cout << "chan_per_ciphertext: " << chan_per_ciphertext << std::endl;
   // std::cout << "channel apply tile: " << break_point << std::endl;
