@@ -536,10 +536,7 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
 
   // check next tile type, if the tile type is external tile, reduce number of output channel:
   // server can shuffle the output ct order and let client learn how to reconstrucute the output ct with 
-  // as original shape with random order(for example, let client know how received ciphertext required to duplicate
-  // its data to reconstrucuture to original shape). 
-  // Note this optimization only work on sequential connection such as conv-relu-conv.
-  // for skip connection on residual block, this optimization should not be applied.
+  // as original shape with random order.
   int32_t original_CO = CO;
 
   if (ntp == 1){
@@ -605,9 +602,6 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
     swapChannels(filterVec, outputIndices, false);
   }
 
-  // // Swap output channels in filterArr based on outputIndices
-  // swapChannels(filterArr, outputIndices, false);
-
 
   // Internal tile setup:
   if (tile_type == 0){
@@ -617,9 +611,12 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
           for (int h = 0; h < CI; h++) {
             if (h < break_point){
               if (int (k % 2) == 0 && int(j % 2) == 0){
-                    inputVec[i][j+1][k][h] = inputVec[i][j][k][h];
-                    inputVec[i][j+1][k+1][h] = inputVec[i][j][k][h];
-                    inputVec[i][j][k+1][h] = inputVec[i][j][k][h];
+                    auto avg_value = floor((inputVec[i][j][k][h] + inputVec[i][j+1][k][h] +
+                                            inputVec[i][j+1][k+1][h] + inputVec[i][j][k+1][h]) / 4.0);
+                    inputVec[i][j][k][h] = avg_value;
+                    inputVec[i][j+1][k][h] = avg_value;
+                    inputVec[i][j+1][k+1][h] = avg_value;
+                    inputVec[i][j][k+1][h] = avg_value;
                 }
               }
             }
@@ -635,7 +632,9 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
           for (int h = 0; h < CI; h++) {
             if (h < break_point){
               if (int (h % 2) == 0){
-                  inputVec[i][j][k][h+1] = inputVec[i][j][k][h];
+                    auto avg_value = floor((inputVec[i][j][k][h] + inputVec[i][j][k][h+1]) / 2.0);
+                    inputVec[i][j][k][h] = avg_value;
+                    inputVec[i][j][k][h+1] = avg_value;
                 }
               }
             }
@@ -661,13 +660,14 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
     }
   }
 
-  //  Reconstrucutre the output and make it same as original shape:
+  //  Reconstrucutre the output shape:
+  int total_output_indices = outputIndices.size();
   if (ntp == 1 && nar != 0 && CO != original_CO) {
     for (int i = 0; i < N; i++) {
           for (int j = 0; j < H; j++) {
               for (int k = 0; k < W; k++) {
                   for (int p = 0; p < original_CO; p++) {
-                      if (p < outputIndices.size()) {
+                      if (p < total_output_indices) {
                           int source_channel = p % 2;
                           Arr4DIdxRowM(outArr, N, H, W, original_CO, i, j, k, p) =
                               Arr4DIdxRowM(outArr, N, H, W, CO, i, j, k, source_channel);
@@ -678,7 +678,7 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
                           }
                       } else {
                           // for p >= break_point:
-                          int source_channel = p - outputIndices.size();
+                          int source_channel = p - total_output_indices;
                           if (source_channel < original_CO && source_channel >= 0) {
                               Arr4DIdxRowM(outArr, N, H, W, original_CO, i, j, k, p) =
                                   Arr4DIdxRowM(outArr, N, H, W, CO, i, j, k, source_channel);
