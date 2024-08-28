@@ -633,9 +633,10 @@ void TILEWrapper(signedIntType N, signedIntType H, signedIntType W,
           for (int h = 0; h < CI; h++) {
             if (h < break_point){
               if (int (h % 2) == 0){
-                    auto avg_value = floor((inputVec[i][j][k][h] + inputVec[i][j][k][h+1]) / 2.0);
-                    inputVec[i][j][k][h] = avg_value;
-                    inputVec[i][j][k][h+1] = avg_value;
+                    // auto avg_value = floor((inputVec[i][j][k][h] + inputVec[i][j][k][h+1]) / 2.0);
+                    // inputVec[i][j][k][h] = avg_value;
+                    // inputVec[i][j][k][h+1] = avg_value;
+                    inputVec[i][j][k][h+1] = inputVec[i][j][k][h];
                 }
               }
             }
