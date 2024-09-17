@@ -58,7 +58,7 @@ def train_model_with_purn(net, epoch, optimizer, criterion, scheduler, key):
 
 def dist_loss(t, s):
     ## KD temperature: Dafult set is 1 in paper, but 4 in NNI code:
-    T = 0.0001
+    T = 1
     prob_t = F.softmax(t/T, dim=1)
     log_prob_s = F.log_softmax(s/T, dim=1)
     dist_loss = F.kl_div(log_prob_s, prob_t, size_average=False) * (T**2) / s.shape[0]
