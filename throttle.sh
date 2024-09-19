@@ -1,5 +1,5 @@
 #!/bin/bash
-# Source code is available from https://github.com/emp-toolkit/emp-readme/blob/master/scripts/throttle.sh
+# The source code is taken from https://github.com/emp-toolkit/emp-readme/blob/master/scripts/throttle.sh
 DEV=lo 
 if [ "$1" == "del" ]
 then
