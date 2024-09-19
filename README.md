@@ -27,3 +27,5 @@ We will optimize and cleanup the code in this repo.
 
 The code current updated on: https://anonymous.4open.science/r/TILE-88D2
 
+# Network setting on Linux:
+Run sudo ./throttle.sh lan to simulate the communication network in a LAN environment on one machine. We provide three network setting options: lan/wan/mobile_US_avg for lab environments.
