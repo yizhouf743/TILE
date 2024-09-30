@@ -9,8 +9,6 @@ EzPC: A framework that help to covert pytorch code to HE-friendly cpp code and t
 
 Currently only experiment scripts for plaintext model and ciphertext test demo for Conv-Relu(the basic unit on vgg and resnet), which is on SCI/tests/test_field_TILE.cpp. 
 
-For example:
-
 To run the ciphertext test demo, Please complie EzPC first, then try:
 
 ./EzPC/SCI/build/bin/TILE-HE r=1 & ./EzPC/SCI/build/bin/TILE-HE r=2.
