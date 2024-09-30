@@ -13,7 +13,7 @@ For example:
 
 To run the ciphertext test demo, Please complie EzPC first, then try:
 
-./EzPC/SCI/build/bin/\<test\> r=1 [port=port] & ./EzPC/SCI/build/bin/\<test\> r=2 [port=port]
+./EzPC/SCI/build/bin/TILE-HE r=1 & ./EzPC/SCI/build/bin/TILE-HE r=2.
 
 # Notes:
 We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning". 
