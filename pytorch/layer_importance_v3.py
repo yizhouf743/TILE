@@ -1,7 +1,7 @@
 import torch, copy
 import torch.nn as nn
 
-def mixed_l1_l2_subgrad_psi(flatten_x, flatten_grad_f, lmbda):
+def mixed_l2_subgrad_psi(flatten_x, flatten_grad_f, lmbda):
   flatten_subgrad_reg = torch.zeros_like(flatten_grad_f)
   norm = torch.norm(flatten_x, p=2, dim=1)
   non_zero_mask = norm != 0
@@ -90,7 +90,7 @@ def hspg_resnet50(net, baseline_net, grad_dict, lmbda, epsilon, optimizer, thres
           flatten_grad_f = grad
           x = base_dict[name]
           ## gradient descent update:
-          flatten_subgrad_psi = mixed_l1_l2_subgrad_psi(flatten_x, flatten_grad_f, lmbda)
+          flatten_subgrad_psi = mixed_l2_subgrad_psi(flatten_x, flatten_grad_f, lmbda)
           flatten_subgrad_psi = get_momentum_grad(grad_dict, name, momentum, flatten_subgrad_psi)      
           # compute trial iterate
           flatten_hat_x = grad_descent_update(flatten_x, lr, flatten_subgrad_psi)
