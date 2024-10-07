@@ -79,13 +79,13 @@ def cal_grad_importance(net):
    im_score = torch.nn.functional.normalize(im_score, p=2.0, dim=0)
    return grad_dict, im_score
 
-def subgrad_psi(flatten_x, flatten_grad_f, lmbda):
+def cal_subgrad(flatten_x, flatten_grad_f, lmbda):
   flatten_subgrad_reg = torch.zeros_like(flatten_grad_f)
   norm = torch.norm(flatten_x, p=2, dim=1)
   non_zero_mask = norm != 0
   flatten_subgrad_reg[non_zero_mask] = flatten_x[non_zero_mask] / (norm[non_zero_mask] + 1e-7).unsqueeze(1)
-  flatten_subgrad_psi = flatten_grad_f + lmbda * flatten_subgrad_reg
-  return flatten_subgrad_psi
+  flatten_cal_subgrad = flatten_grad_f + lmbda * flatten_subgrad_reg
+  return flatten_cal_subgrad
     
 def get_momentum_grad(param_state, key, momentum, grad):
     if momentum > 0:
@@ -164,10 +164,10 @@ def hspg(net, baseline_net, grad_dict, lmbda, epsilon, optimizer, threshold, pre
           flatten_grad_f = grad
           x = base_dict[name]
           ## gradient descent update:
-          flatten_subgrad_psi = subgrad_psi(flatten_x, flatten_grad_f, lmbda)
-          flatten_subgrad_psi = get_momentum_grad(grad_dict, name, momentum, flatten_subgrad_psi)      
+          flatten_cal_subgrad = cal_subgrad(flatten_x, flatten_grad_f, lmbda)
+          flatten_cal_subgrad = get_momentum_grad(grad_dict, name, momentum, flatten_cal_subgrad)      
           # compute trial iterate
-          flatten_hat_x = grad_descent_update(flatten_x, lr, flatten_subgrad_psi)
+          flatten_hat_x = grad_descent_update(flatten_x, lr, flatten_cal_subgrad)
           # decision_signal = half_space_project(flatten_hat_x, flatten_x, x, epsilon, name, previous_group_sparsity, threshold, show_result)
           partial_order(flatten_hat_x, flatten_x, x, epsilon, name, partial)
           # new_list.extend([decision_signal])
@@ -193,10 +193,10 @@ def hspg_resnet34(net, baseline_net, grad_dict, lmbda, epsilon, optimizer, thres
         flatten_grad_f = grad
         x = base_dict[name]
         ## gradient descent update:
-        flatten_subgrad_psi = subgrad_psi(flatten_x, flatten_grad_f, lmbda)
-        flatten_subgrad_psi = get_momentum_grad(grad_dict, name, momentum, flatten_subgrad_psi)      
+        flatten_cal_subgrad = cal_subgrad(flatten_x, flatten_grad_f, lmbda)
+        flatten_cal_subgrad = get_momentum_grad(grad_dict, name, momentum, flatten_cal_subgrad)      
         # compute trial iterate
-        flatten_hat_x = grad_descent_update(flatten_x, lr, flatten_subgrad_psi)
+        flatten_hat_x = grad_descent_update(flatten_x, lr, flatten_cal_subgrad)
         decision_signal = half_space_project(flatten_hat_x, flatten_x, x, epsilon, name, previous_group_sparsity, threshold, show_result)
         partial_order(flatten_hat_x, flatten_x, x, epsilon, name, partial)
         new_list.extend([decision_signal])
