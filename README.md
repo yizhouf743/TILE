@@ -1,6 +1,6 @@
 # TILE
 This repository for the work: "TILE: Input Structure Optimization for Neural Networks to Accelerate Secure Inference". The corresponding paper has been accepted by ACSAC24. 
-The codes are still under development, and should not be used in any security-sensitive product.
+The codes are still under cleanup and development, and should not be used in any security-sensitive product.
 
 # Content:
 PyTorch: The implementation for TILE on VGG16 and Resnet50 on Cifar10 and Tiny-Imagenet, including TILE searching, fine-tuning, running inference, and so on.
