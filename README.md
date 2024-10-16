@@ -1,5 +1,5 @@
 # TILE
-This is the project for the work: "TILE: Input Structure Optimization for Neural Networks to Accelerate Secure Inference". The corresponding paper has been accepted by ACSAC24. 
+This repository for the work: "TILE: Input Structure Optimization for Neural Networks to Accelerate Secure Inference". The corresponding paper has been accepted by ACSAC24. 
 The codes are still under development, and should not be used in any security-sensitive product.
 
 # Content:
