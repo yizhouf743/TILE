@@ -22,4 +22,4 @@ The implementation to reproduce the results in the paper can be found here: EzPC
 We will optimize and clean up the code in this repo.
 
 # Network setting on Linux:
-The networkconfig.sh is developed based on [Cheetah](https://github.com/Alibaba-Gemini-Lab/OpenCheetah/tree/main/scripts). Run sudo ./networkconfig.sh lan to simulate the communication network in a LAN environment on one machine. We provide three network setting options: lan/wan/mobile_US_avg for lab environments.
+The networkconfig.sh is developed based on [Cheetah](https://github.com/Alibaba-Gemini-Lab/OpenCheetah/tree/main/scripts). Run sudo ./networkconfig.sh lan to simulate the communication network in a LAN environment on one machine. We provide three network setting options: lan/wan/mobile_US_avg for experiment.
