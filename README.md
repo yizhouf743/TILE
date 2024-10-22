@@ -7,9 +7,7 @@ PyTorch: The implementation for TILE on VGG16 and Resnet50 on Cifar10 and Tiny-I
 
 EzPC: A framework that helps to covert pytorch code to HE-friendly cpp code and test TILE module/network performance. 
 
-Currently, only experiment scripts for the plaintext model and ciphertext test demo for Conv-Relu(the basic unit on vgg and resnet) are available on SCI/tests/test_field_TILE.cpp. 
-
-To run the ciphertext test demo, Please compile EzPC/SCI first, then try:
+To run the ciphertext test demo for Conv-Relu, Please compile EzPC/SCI first, then try:
 
 ./EzPC/SCI/build/bin/TILE-HE r=1 & ./EzPC/SCI/build/bin/TILE-HE r=2.
 
@@ -17,7 +15,7 @@ To run the ciphertext test demo, Please compile EzPC/SCI first, then try:
 We are using model pruning technologies from the paper: "MOSAIC: A Prune-and-Assemble Approach for Efficient Model Pruning in Privacy-Preserving Deep Learning". 
 We are not showing the code related to this paper, as it is not publicly available. We will update this section once their code becomes publicly accessible.
 
-The implementation to reproduce the results in the paper can be found here: EzPC/SCI/.
+The implementation to reproduce the results in the paper can be found here: EzPC/SCI/. Currently, only experiment scripts for the plaintext model(in Pytorch) and ciphertext test demo for Conv-Relu(the basic unit on vgg and resnet) are available on SCI/tests/test_field_TILE.cpp. 
 
 We will optimize and clean up the code in this repo.
 
