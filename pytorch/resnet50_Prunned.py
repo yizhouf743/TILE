@@ -319,13 +319,13 @@ def cal_partial_order(replace_order, search_range, cn=[2, 2, 2, 2], threshold=2)
       #   indices = torch.where(layer_order < threshold * rs)[0]
       #   print('inital threshold for', name, 'is', (threshold * rs).item())
 
-      layer_order = layer_order.view(-1, cpc)
-      layer_order = layer_order.sum(dim=1).repeat_interleave(cpc)
+      # layer_order = layer_order.view(-1, cpc)
+      # layer_order = layer_order.sum(dim=1).repeat_interleave(cpc)
       if 'conv2' in name:
         indices = torch.where(layer_order < threshold)[0]
       else:
-        # layer_order = layer_order.view(-1, cpc)
-        # layer_order = layer_order.sum(dim=1).repeat_interleave(cpc)
+        layer_order = layer_order.view(-1, cpc)
+        layer_order = layer_order.sum(dim=1).repeat_interleave(cpc)
         if threshold > 0:
           indices = torch.where(layer_order < (threshold * rs))[0]
         else:
