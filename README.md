@@ -19,5 +19,7 @@ The implementation to reproduce the results in the paper can be found here: EzPC
 
 We will optimize and clean up the code in this repo.
 
-# Network Simulation Setting for Linux Tc:
-The networkconfig.sh is developed based on [Cheetah](https://github.com/Alibaba-Gemini-Lab/OpenCheetah/tree/main/scripts). Run sudo ./networkconfig.sh lan to simulate the communication network in a LAN environment on one machine. We provide three network setting options: lan/wan/mobile_US_avg for experiment.
+# Credits:
+The networkconfig.sh is developed based on [Cheetah](https://github.com/Alibaba-Gemini-Lab/OpenCheetah/blob/main/scripts/throttle.sh). Run sudo ./networkconfig.sh lan to simulate the communication network in a LAN environment on one machine. We provide three network setting options: lan/wan/mobile_US_avg for experiment.
+
+The layer_importance.py and layer_importance_v3.py is developed based on [OTO](https://github.com/tianyic/only_train_once_personal_footprint)
